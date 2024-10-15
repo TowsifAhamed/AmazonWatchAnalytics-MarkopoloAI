@@ -33,7 +33,7 @@ def getting_data(keyword, driver):
         product_data = []
 
         # Loop through pages (up to 5 pages)
-        for page in range(1):
+        for page in range(4):
             # Wait until products are loaded and locate them
             items = driver.find_elements(By.XPATH, '//div[contains(@class, "s-result-item s-asin")]')
 
@@ -162,7 +162,7 @@ def insert_or_update_data_to_postgresql(data):
             cursor.execute("""
                 INSERT INTO products (asin, name, original_price, discounted_price, delivery_price, ratings, ratings_num, link, ratings_link, category, page_number, image_link, store_name, store_url, purchase_num, shipping_import_fees, colors, product_details, customer_say)
                 VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-                ON CONFLICT (link)
+                ON CONFLICT (asin)
                 DO UPDATE SET
                     name = EXCLUDED.name,
                     original_price = EXCLUDED.original_price,
@@ -190,186 +190,8 @@ def insert_or_update_data_to_postgresql(data):
     except Exception as e:
         print(f"Failed to insert or update data into PostgreSQL: {e}")
 
-# Function to get product links from PostgreSQL
-def get_product_links():
-    try:
-        # Connect to PostgreSQL database
-        conn = psycopg2.connect(
-            dbname="amznwatchesdb",
-            user="amznwatchuser",
-            password="amznwatchpass",
-            host="localhost"
-        )
-        cursor = conn.cursor()
-
-        # Get the product links
-        cursor.execute("SELECT link FROM products;")
-        links = cursor.fetchall()
-
-        cursor.close()
-        conn.close()
-
-        return [link[0] for link in links]
-
-    except Exception as e:
-        print(f"Failed to get product links from PostgreSQL: {e}")
-        return []
-
-# Function to scrape additional data from the product link
-def scrape_additional_data(driver, link):
-    driver.get(link)
-    WebDriverWait(driver, 20).until(EC.presence_of_element_located((By.TAG_NAME, 'body')))
-    
-    product_details = {
-        "store_name": "N/A",
-        "store_url": "N/A",
-        "purchase_num": "N/A",
-        "shipping_import_fees": "N/A",
-        "colors": "N/A",
-        "product_details": "N/A",
-        "customer_say": "N/A",
-        "reviews": []
-    }
-    
-    try:
-        # Get store name and store URL
-        try:
-            store_element = driver.find_element(By.ID, 'bylineInfo')
-            product_details["store_name"] = store_element.text.replace("Visit the ", "")
-            product_details["store_url"] = store_element.get_attribute("href")
-        except:
-            pass
-        
-        # Get purchase number
-        try:
-            purchase_element = driver.find_element(By.XPATH, '//span[@id="social-proofing-faceout-title-tk_bought"]')
-            product_details["purchase_num"] = purchase_element.text
-        except:
-            pass
-        
-        # Get shipping and import fees
-        try:
-            shipping_fees_element = driver.find_element(By.XPATH, '//span[contains(text(), "Shipping & Import Fees")]')
-            product_details["shipping_import_fees"] = shipping_fees_element.text
-        except:
-            pass
-        
-        # Get color variations
-        try:
-            color_elements = driver.find_elements(By.XPATH, '//ul[@class="a-unordered-list a-nostyle a-button-list a-declarative a-button-toggle-group a-horizontal a-spacing-top-micro swatches swatchesRectangle imageSwatches"]//li')
-            colors = []
-            for color_element in color_elements:
-                color_name = color_element.get_attribute("title").replace("Click to select ", "")
-                colors.append(color_name)
-            product_details["colors"] = ",".join(colors)
-        except:
-            pass
-        
-        # Get product details
-        try:
-            product_details_element = driver.find_element(By.ID, 'productFactsDesktop_feature_div')
-            product_details["product_details"] = product_details_element.text.replace("\nSee more", "")
-        except:
-            pass
-        
-        # Get "customer say" summary
-        try:
-            customer_say_element = driver.find_element(By.XPATH, '//div[@id="product-summary"]//p[1]')
-            product_details["customer_say"] = customer_say_element.text
-        except:
-            pass
-        
-        # Get customer reviews
-        try:
-            review_elements = driver.find_elements(By.XPATH, '//div[contains(@id, "customer_review-")]')
-            for review_element in review_elements:
-                review = {
-                    "name": "N/A",
-                    "url": "N/A",
-                    "rating": "N/A",
-                    "title": "N/A",
-                    "date": "N/A",
-                    "color": "N/A",
-                    "verified_purchase": False,
-                    "review_text": "N/A",
-                    "helpful_count": 0,
-                    "image_link": "N/A"
-                }
-                
-                try:
-                    # Reviewer name and profile URL
-                    reviewer_element = review_element.find_element(By.XPATH, './/div[@data-hook="genome-widget"]')
-                    review["name"] = reviewer_element.text
-                    review["url"] = reviewer_element.find_element(By.XPATH, './/a').get_attribute("href")
-                except:
-                    pass
-                
-                try:
-                    # Rating
-                    rating_element = review_element.find_element(By.XPATH, './/i[@data-hook="review-star-rating"]//span').get_attribute("innerHTML")
-                    review["rating"] = rating_element
-                except:
-                    pass
-                
-                try:
-                    # Review title
-                    title_element = review_element.find_element(By.XPATH, './/a[@data-hook="review-title"]')
-                    review["title"] = title_element.text
-                except:
-                    pass
-                
-                try:
-                    # Color information
-                    color_element = review_element.find_element(By.XPATH, './/span[@data-hook="format-strip-linkless"]')
-                    review["color"] = color_element.text
-                except:
-                    pass
-                
-                try:
-                    # Verified purchase
-                    review["verified_purchase"] = bool(review_element.find_element(By.XPATH, './/span[@data-hook="avp-badge-linkless"]'))
-                except:
-                    pass
-                
-                try:
-                    # Review date
-                    review_date = review_element.find_element(By.XPATH, './/span[@data-hook="review-date"]')
-                    review["date"] = review_date.text
-                except:
-                    pass
-                
-                try:
-                    # Review text
-                    review_text_element = review_element.find_element(By.XPATH, './/span[@data-hook="review-body"]')
-                    review["review_text"] = review_text_element.text
-                except:
-                    pass
-                
-                try:
-                    # Helpful count
-                    helpful_element = review_element.find_element(By.XPATH, './/span[@data-hook="helpful-vote-statement"]')
-                    review["helpful_count"] = int(helpful_element.text.split()[0])
-                except:
-                    pass
-                
-                try:
-                    # Image link
-                    image_element = review_element.find_element(By.XPATH, './/img[@data-hook="review-image-tile"]')
-                    review["image_link"] = image_element.get_attribute("data-src")
-                except:
-                    pass
-                
-                product_details["reviews"].append(review)
-        except:
-            pass
-
-    except Exception as e:
-        print(f"Error while scraping product details: {e}")
-
-    return product_details
-
 # Function to insert or update reviews data into PostgreSQL
-def insert_reviews_data_to_postgresql(reviews, product_link):
+def insert_reviews_data_to_postgresql(reviews, product_asin):
     try:
         # Connect to PostgreSQL database
         conn = psycopg2.connect(
@@ -384,7 +206,7 @@ def insert_reviews_data_to_postgresql(reviews, product_link):
         for review in reviews:
             cursor.execute("""
                 INSERT INTO reviews (product_id, name, url, rating, title, date, color, verified_purchase, review_text, helpful_count, image_link)
-                VALUES ((SELECT id FROM products WHERE link = %s), %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                VALUES ((SELECT id FROM products WHERE asin = %s), %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                 ON CONFLICT (product_id, url)
                 DO UPDATE SET
                     rating = EXCLUDED.rating,
@@ -396,7 +218,7 @@ def insert_reviews_data_to_postgresql(reviews, product_link):
                     helpful_count = EXCLUDED.helpful_count,
                     image_link = EXCLUDED.image_link
             """, (
-                product_link, review['name'], review['url'], review['rating'], review['title'], review['date'],
+                product_asin, review['name'], review['url'], review['rating'], review['title'], review['date'],
                 review['color'], review['verified_purchase'], review['review_text'], review['helpful_count'], review['image_link']
             ))
 
@@ -429,13 +251,18 @@ def main():
 
         # Now scrape additional details for the products
         product_links = get_product_links()
-        scraped_data = []
 
+        # Print number of product links in the table
+        print(f"Total number of product links in the table: {len(product_links)}")
+
+        # Check for duplicate links
+        unique_links = set(product_links)
+        if len(unique_links) < len(product_links):
+            print("Warning: Duplicate product links found in the database.")
+
+        # Loop through only non-scraped product links
         for link in product_links:
-            additional_data = scrape_additional_data(driver, link)
-            scraped_data.append(additional_data)
-            
-            # Insert additional product details into PostgreSQL
+            # Connect to PostgreSQL to check if the product has been fully scraped
             conn = psycopg2.connect(
                 dbname="amznwatchesdb",
                 user="amznwatchuser",
@@ -444,26 +271,50 @@ def main():
             )
             cursor = conn.cursor()
             cursor.execute("""
-                UPDATE products SET
-                store_name = %s,
-                store_url = %s,
-                purchase_num = %s,
-                shipping_import_fees = %s,
-                colors = %s,
-                product_details = %s,
-                customer_say = %s
+                SELECT store_name, store_url, purchase_num, shipping_import_fees, colors, product_details, customer_say
+                FROM products
                 WHERE link = %s
-            """, (
-                additional_data['store_name'], additional_data['store_url'], additional_data['purchase_num'],
-                additional_data['shipping_import_fees'], additional_data['colors'], additional_data['product_details'],
-                additional_data['customer_say'], link
-            ))
-            conn.commit()
+            """, (link,))
+            result = cursor.fetchone()
             cursor.close()
             conn.close()
 
-            # Insert or update reviews data
-            insert_reviews_data_to_postgresql(additional_data['reviews'], link)
+            scraped_data = []
+
+            if result and result[0] == "N/A" and result[1] == "N/A" and result[2] == "N/A" and result[3] == "N/A" and result[4] == "N/A" and result[5] == "N/A" and result[6] == "N/A":
+                # Only scrape additional data if the product hasn't been fully scraped
+                additional_data = scrape_additional_data(driver, link)
+                scraped_data.append(additional_data)
+
+                # Insert additional product details into PostgreSQL
+                conn = psycopg2.connect(
+                    dbname="amznwatchesdb",
+                    user="amznwatchuser",
+                    password="amznwatchpass",
+                    host="localhost"
+                )
+                cursor = conn.cursor()
+                cursor.execute("""
+                    UPDATE products SET
+                    store_name = %s,
+                    store_url = %s,
+                    purchase_num = %s,
+                    shipping_import_fees = %s,
+                    colors = %s,
+                    product_details = %s,
+                    customer_say = %s
+                    WHERE link = %s
+                """, (
+                    additional_data['store_name'], additional_data['store_url'], additional_data['purchase_num'],
+                    additional_data['shipping_import_fees'], additional_data['colors'], additional_data['product_details'],
+                    additional_data['customer_say'], link
+                ))
+                conn.commit()
+                cursor.close()
+                conn.close()
+
+                # Insert or update reviews data
+                insert_reviews_data_to_postgresql(additional_data['reviews'], additional_data['asin'])
 
         # Save all scraped data to a JSON file
         with open("scraped_product_data.json", "w") as f:
