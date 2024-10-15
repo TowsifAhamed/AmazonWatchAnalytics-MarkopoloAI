@@ -1,0 +1,44 @@
+postgres@coel-Inspiron-3501:~$ psql
+psql (12.20 (Ubuntu 12.20-0ubuntu0.20.04.1))
+Type "help" for help.
+
+postgres=# CREATE DATABASE amznwatchesdb;
+CREATE DATABASE
+postgres=# CREATE USER amznwatchuser WITH PASSWORD 'amznwatchpass';
+CREATE ROLE
+postgres=# GRANT ALL PRIVILEGES ON DATABASE amznwatchesdb TO amznwatchuser;
+GRANT
+postgres=# \q
+
+postgres@coel-Inspiron-3501:~$ psql -U amznwatchuser -d amznwatchesdb
+Password for user amznwatchuser: 
+psql (12.20 (Ubuntu 12.20-0ubuntu0.20.04.1))
+Type "help" for help.
+
+amznwatchesdb=> CREATE TABLE products ( id SERIAL PRIMARY KEY, asin VARCHAR(50), name TEXT, original_price VARCHAR(50), discounted_price VARCHAR(50), delivery_price VARCHAR(50), ratings VARCHAR(50), ratings_num VARCHAR(50), link TEXT, ratings_link TEXT, category VARCHAR(100), page_number INTEGER, image_link TEXT );
+CREATE TABLE
+amznwatchesdb=> \q
+postgres@coel-Inspiron-3501:~$ psql -U amznwatchuser -d amznwatchesdb
+Password for user amznwatchuser: 
+psql (12.20 (Ubuntu 12.20-0ubuntu0.20.04.1))
+Type "help" for help.
+
+amznwatchesdb=> ALTER TABLE products ADD CONSTRAINT unique_link UNIQUE (link);
+ALTER TABLE
+amznwatchesdb=> ALTER TABLE products ADD COLUMN store_name TEXT, ADD COLUMN store_url TEXT, ADD COLUMN purchase_num VARCHAR(50), ADD COLUMN shipping_import_fees VARCHAR(100), ADD COLUMN colors TEXT, ADD COLUMN product_details TEXT, ADD COLUMN customer_say TEXT;
+ALTER TABLE
+amznwatchesdb=> \q
+postgres@coel-Inspiron-3501:~$ psql -U amznwatchuser -d amznwatchesdb
+Password for user amznwatchuser: 
+psql (12.20 (Ubuntu 12.20-0ubuntu0.20.04.1))
+Type "help" for help.
+
+amznwatchesdb=> CREATE TABLE reviews ( id SERIAL PRIMARY KEY, product_id INTEGER REFERENCES products(id) ON DELETE CASCADE, name TEXT, url TEXT, rating VARCHAR(50), title TEXT, date VARCHAR(50), color VARCHAR(50), verified_purchase BOOLEAN, review_text TEXT, helpful_count INTEGER, image_link TEXT );
+CREATE TABLE
+amznwatchesdb=> ALTER TABLE reviews ALTER COLUMN date TYPE VARCHAR(100);
+ALTER TABLE
+amznwatchesdb=> ALTER TABLE reviews ALTER COLUMN color TYPE VARCHAR(100);
+ALTER TABLE
+amznwatchesdb=> ALTER TABLE reviews ADD CONSTRAINT unique_review UNIQUE (product_id, url);
+ALTER TABLE
+amznwatchesdb=> 
