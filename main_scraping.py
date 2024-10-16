@@ -8,8 +8,8 @@ import psycopg2
 import time
 import json
 
-update_watch_data = False
-update_watch_review_data = False
+update_watch_data = True
+update_watch_review_data = True
 
 # Set up Chrome options
 chrome_options = Options()
