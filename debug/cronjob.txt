@@ -1,0 +1,15 @@
+crontab -e
+no crontab for tlabib - using an empty one
+
+Select an editor.  To change later, run 'select-editor'.
+  1. /bin/nano        <---- easiest
+  2. /usr/bin/vim.tiny
+  3. /usr/bin/code
+  4. /bin/ed
+
+Choose 1-4 [1]: 1
+
+0 * * * * /home/tlabib/coelv2_env/bin/python /home/tlabib/Documents/github/AmazonWatchAnalytics-MarkopoloAI/main_scraping.py
+
+ctrl+x
+y
