@@ -84,6 +84,7 @@ The `test_apicalls.py` script is used to test the API endpoints.
 To run the tests:
 
 ```bash
+cd test
 python test_apicalls.py
 ```
 
