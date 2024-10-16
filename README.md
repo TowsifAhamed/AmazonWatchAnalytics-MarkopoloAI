@@ -106,3 +106,9 @@ This script will perform various calls to the REST API, ensuring the endpoints f
 4. Run the scraping script to populate the database.
 5. Start the Flask API to serve the data.
 6. Run the LLM insights script for conversational analysis.
+
+
+
+### Explanation Video: 
+https://drive.google.com/file/d/145UWBvlBpB5ACpmitpspC2P_9ESCyvqO/view?usp=sharing
+Forgot to tell - 1. Will find the commands I used to set up the postgresql db in debug folder
