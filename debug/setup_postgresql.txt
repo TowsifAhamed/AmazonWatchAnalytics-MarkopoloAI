@@ -41,4 +41,29 @@ amznwatchesdb=> ALTER TABLE reviews ALTER COLUMN color TYPE VARCHAR(100);
 ALTER TABLE
 amznwatchesdb=> ALTER TABLE reviews ADD CONSTRAINT unique_review UNIQUE (product_id, url);
 ALTER TABLE
+amznwatchesdb=> ALTER TABLE products DROP CONSTRAINT unique_link;
+ALTER TABLE
+amznwatchesdb=> ALTER TABLE products ADD CONSTRAINT unique_asin UNIQUE (asin);
+ERROR:  could not create unique index "unique_asin"
+DETAIL:  Key (asin)=(B07M9RWN2P) is duplicated.
+amznwatchesdb=> DELETE FROM products WHERE ctid NOT IN ( SELECT min(ctid) FROM products GROUP BY asin );
+DELETE 961
+amznwatchesdb=> ALTER TABLE reviews DROP CONSTRAINT IF EXISTS unique_product_url;
+NOTICE:  constraint "unique_product_url" of relation "reviews" does not exist, skipping
+ALTER TABLE
+amznwatchesdb=> ALTER TABLE reviews DROP CONSTRAINT IF EXISTS unique_review;
+ALTER TABLE
+amznwatchesdb=> ALTER TABLE reviews ADD CONSTRAINT unique_review_asin_name UNIQUE (product_id, name);
+ERROR:  could not create unique index "unique_review_asin_name"
+DETAIL:  Key (product_id, name)=(1143, Amazon Customer) is duplicated.
+amznwatchesdb=> ALTER TABLE reviews ADD CONSTRAINT unique_review UNIQUE (product_id, url);
+ALTER TABLE
+amznwatchesdb=> ALTER TABLE products ADD CONSTRAINT unique_asin UNIQUE (asin);
+ALTER TABLE
+amznwatchesdb=> ALTER TABLE reviews ALTER COLUMN color TYPE VARCHAR(100);
+ALTER TABLE
+amznwatchesdb=> ALTER TABLE reviews ALTER COLUMN color TYPE TEXT;
+ALTER TABLE
+amznwatchesdb=> ALTER TABLE reviews ALTER COLUMN date TYPE TEXT;
+ALTER TABLE
 amznwatchesdb=> 
