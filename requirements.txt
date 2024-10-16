@@ -1,0 +1,9 @@
+selenium
+requests
+Flask
+psycopg2-binary
+numpy
+faiss-cpu
+langchain-community
+sentence-transformers
+groq

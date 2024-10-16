@@ -2,6 +2,8 @@ import psycopg2
 import time
 import json
 from flask import Flask, request, jsonify
+# Import required functions from LLM_RAG.py
+from LLM_RAG import extract_data, generate_response_with_groq
 
 app = Flask(__name__)
 
@@ -215,6 +217,35 @@ def get_product_reviews(product_id):
 
     except Exception as e:
         return jsonify({"error": str(e)})
+
+# REST API: POST /ask_query
+@app.route('/ask_query', methods=['POST'])
+def ask_query():
+    try:
+        # Extract the query from the POST request
+        data = request.get_json()
+        user_query = data.get('query', '')
+
+        if not user_query:
+            return jsonify({"error": "Query is required"}), 400
+
+        # Step 1: Extract data from PostgreSQL based on the user's query
+        products = extract_data(user_query)
+
+        if not products:
+            return jsonify({"error": "No products retrieved from the database"}), 404
+
+        # Step 2: Use the complete product list as context to generate response
+        context = "\n".join(products)
+
+        # Step 3: Generate response using Groq API
+        response = generate_response_with_groq(user_query, context)
+
+        # Return the response
+        return jsonify({"response": response})
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=3001)

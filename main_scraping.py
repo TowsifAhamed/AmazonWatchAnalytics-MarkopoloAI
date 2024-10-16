@@ -79,7 +79,7 @@ def getting_data(keyword, driver):
                     try:
                         whole_price = item.find_element(By.XPATH, './/span[@class="a-price-whole"]').text
                         fraction_price = item.find_element(By.XPATH, './/span[@class="a-price-fraction"]').text
-                        product["discounted_price"] = f"{whole_price}.{fraction_price}"
+                        product["discounted_price"] = f"{whole_price}.{fraction_price}".replace(",", "")
                     except:
                         pass
 

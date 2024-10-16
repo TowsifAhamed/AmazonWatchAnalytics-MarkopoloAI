@@ -1,5 +1,6 @@
 import requests
 import json
+import time
 
 BASE_URL = "http://localhost:3001"
 
@@ -7,8 +8,8 @@ BASE_URL = "http://localhost:3001"
 def call_get_products():
     try:
         params = {
-            "brand": "casio",
-            "min_price": "10",
+            "brand": "citizen",
+            "min_price": "20",
             "max_price": "5000",
             "min_rating": "3",
             "sort_by": "discounted_price",
@@ -62,9 +63,40 @@ def call_get_product_reviews(product_id):
     except Exception as e:
         print(f"Failed to call /products/{product_id}/reviews: {e}")
 
+# Function to call the /ask_query API
+def call_ask_query(query):
+    try:
+        headers = {
+            'Content-Type': 'application/json'
+        }
+        data = {
+            "query": query
+        }
+        response = requests.post(f"{BASE_URL}/ask_query", headers=headers, json=data)
+        if response.status_code == 200:
+            response_data = response.json()
+            response_data["query"] = query
+
+            # Create a unique filename by hashing the query and adding a timestamp
+            timestamp = int(time.time())
+            filename = f'ask_query_response_{timestamp}.json'
+
+            with open(filename, 'w') as f:
+                json.dump(response_data, f, indent=4)
+            print(f"\n--- Ask Query Response for '{query}' ---\n")
+            print(json.dumps(response_data, indent=4))
+        else:
+            print(f"Error: {response.status_code}, {response.text}")
+    except Exception as e:
+        print(f"Failed to call /ask_query: {e}")
+
 if __name__ == "__main__":
     # Call each API and display the responses
     call_get_products()
     call_get_top_products()
     # For demonstration, calling the reviews API for product ID 1
     call_get_product_reviews(101)
+
+    # Call the ask_query endpoint with different queries
+    call_ask_query("What are the best smartwatches under $300?")
+    call_ask_query("Can you suggest some water resistant ladies watches under $50?")
